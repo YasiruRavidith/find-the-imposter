@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithPopup, onAuthStateChanged, type User, signOut } from "firebase/auth";
+import { signInWithRedirect } from "firebase/auth";
 import { get, ref, set } from "firebase/database";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import { AVATARS, COUNTRIES } from "@/lib/game";
@@ -54,8 +55,27 @@ export default function Home() {
     setError("");
     try {
       await signInWithPopup(auth, googleProvider);
-    } catch {
-      setError("Google sign-in failed. Check Firebase auth settings and try again.");
+    } catch (caughtError) {
+      const firebaseCode =
+        typeof caughtError === "object" && caughtError && "code" in caughtError
+          ? String((caughtError as { code?: unknown }).code)
+          : "unknown";
+
+      if (firebaseCode === "auth/popup-blocked" || firebaseCode === "auth/cancelled-popup-request") {
+        try {
+          await signInWithRedirect(auth, googleProvider);
+          return;
+        } catch (redirectError) {
+          const redirectCode =
+            typeof redirectError === "object" && redirectError && "code" in redirectError
+              ? String((redirectError as { code?: unknown }).code)
+              : "unknown";
+          setError(`Google sign-in failed (${redirectCode}). Check Firebase auth settings and authorized domains.`);
+          return;
+        }
+      }
+
+      setError(`Google sign-in failed (${firebaseCode}). Check Firebase auth settings and authorized domains.`);
     }
   }
 
@@ -88,7 +108,7 @@ export default function Home() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_20%_10%,_#ffd7a8_0%,_#f7f0dd_45%,_#d4efe6_100%)] px-4 py-8 sm:px-8">
+    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_20%_10%,#ffd7a8_0%,#f7f0dd_45%,#d4efe6_100%)] px-4 py-8 sm:px-8">
       <div className="pointer-events-none absolute -left-10 top-16 h-52 w-52 rounded-full bg-amber-300/40 blur-3xl" />
       <div className="pointer-events-none absolute -right-10 bottom-8 h-64 w-64 rounded-full bg-emerald-300/40 blur-3xl" />
 
