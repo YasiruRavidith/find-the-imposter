@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { onValue, ref } from "firebase/database";
 import { auth, db } from "@/lib/firebase";
+import { avatarImagePath, resolveCountry } from "@/lib/game";
 import type { UserProfile } from "@/lib/types";
 
 export default function LeaderboardPage() {
@@ -41,25 +43,28 @@ export default function LeaderboardPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_15%_20%,_#d1fae5_0%,_#f4f4cf_45%,_#fee2e2_100%)] px-4 py-8 sm:px-8">
-      <section className="mx-auto w-full max-w-3xl rounded-3xl border border-black/10 bg-white/85 p-6 shadow-xl backdrop-blur sm:p-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
+    <main className="noir-shell">
+      <section className="noir-frame max-w-5xl p-4 sm:p-6">
+        <div className="noir-divider flex flex-wrap items-center justify-between gap-3 pb-4">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-600">Global</p>
-            <h1 className="mt-1 text-4xl font-black text-zinc-900">Leaderboard</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="noir-label">Global Agency Roster</p>
+              <span className="noir-screen-id">Screen ID: N-004 Roster</span>
+            </div>
+            <h1 className="noir-title mt-1 text-3xl font-bold sm:text-5xl">Top Detectives</h1>
           </div>
           <button
             type="button"
             onClick={() => router.push("/dashboard")}
-            className="rounded-xl border border-zinc-300 bg-white px-4 py-2 font-semibold text-zinc-800 transition hover:bg-zinc-100"
+            className="noir-btn-ghost px-4 py-2 text-sm uppercase tracking-[0.08em]"
           >
-            Back to Dashboard
+            Return To Briefing
           </button>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-zinc-100 text-zinc-700">
+        <div className="mt-5 overflow-x-auto noir-panel">
+          <table className="min-w-160 w-full text-left text-sm">
+            <thead className="bg-[#ffe9f2] text-slate-800">
               <tr>
                 <th className="px-4 py-3 font-bold">#</th>
                 <th className="px-4 py-3 font-bold">Player</th>
@@ -71,17 +76,25 @@ export default function LeaderboardPage() {
             <tbody>
               {sortedUsers.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-5 text-zinc-600">
+                  <td colSpan={5} className="px-4 py-5 text-slate-600">
                     No scores yet.
                   </td>
                 </tr>
               ) : (
                 sortedUsers.map((user, index) => (
-                  <tr key={user.uid} className="border-t border-zinc-200 text-zinc-800">
+                  <tr key={user.uid} className="border-t border-[#1b2235]/25 text-slate-800 odd:bg-white even:bg-[#f1f8ff]">
                     <td className="px-4 py-3 font-bold">{index + 1}</td>
                     <td className="px-4 py-3">{user.displayName}</td>
-                    <td className="px-4 py-3">{user.avatar}</td>
-                    <td className="px-4 py-3">{user.country}</td>
+                    <td className="px-4 py-3">
+                      <Image
+                        src={avatarImagePath(user.avatar)}
+                        alt={user.displayName}
+                        width={32}
+                        height={32}
+                        className="h-8 w-8 rounded-full border-2 border-[#1b2235] object-cover"
+                      />
+                    </td>
+                    <td className="px-4 py-3">{resolveCountry(user.country)}</td>
                     <td className="px-4 py-3 font-bold">{user.score ?? 0}</td>
                   </tr>
                 ))

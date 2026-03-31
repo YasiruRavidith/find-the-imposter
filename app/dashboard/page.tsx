@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { get, ref, set } from "firebase/database";
 import { auth, db } from "@/lib/firebase";
-import { generateRoomCode, normalizeRoomCode } from "@/lib/game";
+import { avatarImagePath, generateRoomCode, normalizeRoomCode, resolveCountry } from "@/lib/game";
 import type { Room, RoomPlayer, UserProfile } from "@/lib/types";
 
 export default function DashboardPage() {
@@ -14,6 +15,7 @@ export default function DashboardPage() {
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [joinCodeInput, setJoinCodeInput] = useState("");
+  const [topDetectives, setTopDetectives] = useState<UserProfile[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,6 +34,13 @@ export default function DashboardPage() {
       }
 
       setProfile(profileSnap.val() as UserProfile);
+
+      const usersSnap = await get(ref(db, "users"));
+      if (usersSnap.exists()) {
+        const users = Object.values(usersSnap.val() as Record<string, UserProfile>);
+        users.sort((a, b) => (b.score ?? 0) - (a.score ?? 0));
+        setTopDetectives(users.slice(0, 10));
+      }
     });
 
     return () => unsubscribe();
@@ -58,7 +67,7 @@ export default function DashboardPage() {
       const player: RoomPlayer = {
         uid: authUser.uid,
         displayName: profile.displayName,
-        country: profile.country,
+        country: resolveCountry(profile.country),
         avatar: profile.avatar,
         photoURL: profile.photoURL,
         score: profile.score ?? 0,
@@ -109,7 +118,7 @@ export default function DashboardPage() {
       const player: RoomPlayer = {
         uid: authUser.uid,
         displayName: profile.displayName,
-        country: profile.country,
+        country: resolveCountry(profile.country),
         avatar: profile.avatar,
         photoURL: profile.photoURL,
         score: existingPlayer?.score ?? profile.score ?? 0,
@@ -127,75 +136,156 @@ export default function DashboardPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_right,_#dcfce7_0%,_#f6f7d7_40%,_#ffe5d2_100%)] px-4 py-8 sm:px-8">
-      <div className="mx-auto w-full max-w-3xl space-y-5">
-        <header className="rounded-3xl border border-black/10 bg-white/85 p-6 shadow-xl backdrop-blur">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-zinc-600">Dashboard</p>
-          <h1 className="mt-2 text-4xl font-black text-zinc-900">Room Control</h1>
-          {profile ? (
-            <p className="mt-2 text-sm text-zinc-700">
-              {profile.displayName} | {profile.avatar} | {profile.country} | Score {profile.score}
-            </p>
-          ) : (
-            <p className="mt-2 text-sm text-zinc-700">Loading profile...</p>
-          )}
+    <main className="noir-shell">
+      <div className="noir-frame max-w-6xl p-4 sm:p-6">
+        <header className="noir-divider pb-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🔺</span>
+              <p className="text-sm font-black uppercase tracking-[0.05em] text-slate-900">Imposter Word</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => router.push("/profile")}
+                className="flex h-10 w-10 items-center justify-center rounded-full border-3 border-[#1b2235] bg-white text-lg shadow-[0_4px_0_rgba(27,34,53,0.18)]"
+                aria-label="Profile settings"
+              >
+                ⚙️
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push("/leaderboard")}
+                className="flex h-10 w-10 items-center justify-center rounded-full border-3 border-[#1b2235] bg-[#19b8f2] text-lg shadow-[0_4px_0_rgba(27,34,53,0.18)]"
+                aria-label="Open leaderboard"
+              >
+                🙂
+              </button>
+            </div>
+          </div>
+          <div className="mt-4 flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-4xl font-black leading-tight text-slate-900 sm:text-6xl">
+                Ready to play,
+                <span className="ml-2 text-[#ff4b8b]">{profile?.displayName ?? "Detective"}</span>?
+              </h1>
+              <p className="mt-2 max-w-lg text-base font-semibold text-slate-700">
+                Create a new game room or enter a code to join your friends.
+              </p>
+            </div>
+            {profile ? (
+              <div className="hidden items-center gap-2 rounded-full border-3 border-[#1b2235] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 md:flex">
+                <Image
+                  src={avatarImagePath(profile.avatar)}
+                  alt={profile.displayName}
+                  width={26}
+                  height={26}
+                  className="h-6 w-6 rounded-full border-2 border-[#1b2235] object-cover"
+                />
+                <span>{resolveCountry(profile.country)}</span>
+                <span>|</span>
+                <span>{profile.score} pts</span>
+              </div>
+            ) : null}
+          </div>
         </header>
 
-        <section className="grid gap-4 rounded-3xl border border-black/10 bg-white/85 p-6 shadow-xl backdrop-blur sm:grid-cols-2">
-          <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-            <h2 className="text-2xl font-black text-zinc-900">Create Room</h2>
-            <p className="text-sm text-zinc-700">Generate a 6-letter room code and invite friends over the internet.</p>
+        <section className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.85fr]">
+          <div className="space-y-4">
             <button
               type="button"
               onClick={createRoom}
               disabled={busy || !authUser || !profile}
-              className="w-full rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="noir-btn w-full px-5 py-3 text-xl"
             >
-              {busy ? "Please wait..." : "Create Room"}
+              {busy ? "Opening..." : "✚ Create Game"}
             </button>
+            <p className="text-center text-xs font-semibold text-slate-500">Host a new game and invite others</p>
+
+            <div className="flex items-center gap-3 py-1">
+              <span className="h-px flex-1 bg-[#1b2235]/20" />
+              <span className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">OR</span>
+              <span className="h-px flex-1 bg-[#1b2235]/20" />
+            </div>
+
+            <div className="noir-panel bg-[linear-gradient(120deg,#ffffff_0%,#e6f7ff_100%)] p-4 sm:p-5">
+              <p className="text-sm font-black text-slate-900">🧑‍💼 Join a Room</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+                <input
+                  value={joinCodeInput}
+                  onChange={(event) => setJoinCodeInput(event.target.value)}
+                  placeholder="ENTER 6-LETTER CODE"
+                  maxLength={6}
+                  className="noir-input font-mono text-sm tracking-[0.12em] uppercase"
+                />
+                <button
+                  type="button"
+                  onClick={joinRoom}
+                  disabled={busy || normalizedJoinCode.length !== 6 || !authUser || !profile}
+                  className="noir-btn-ghost px-7 py-2 text-sm"
+                >
+                  Join →
+                </button>
+              </div>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => router.push("/profile")}
+                className="noir-btn-ghost w-full px-4 py-2 text-xs"
+              >
+                Profile Settings
+              </button>
+              <button
+                type="button"
+                onClick={() => signOut(auth)}
+                className="w-full rounded-full border-3 border-[#1b2235] bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-[0.08em] text-[#d22f67] transition hover:bg-[#fff0f6]"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
 
-          <div className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4">
-            <h2 className="text-2xl font-black text-zinc-900">Join Room</h2>
-            <label className="block space-y-1">
-              <span className="text-sm font-semibold text-zinc-800">Room code</span>
-              <input
-                value={joinCodeInput}
-                onChange={(event) => setJoinCodeInput(event.target.value)}
-                placeholder="AB12CD"
-                maxLength={6}
-                className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 font-mono tracking-[0.2em] uppercase outline-none ring-emerald-300 transition focus:ring-2"
-              />
-            </label>
+          <aside className="noir-panel overflow-hidden p-0">
+            <div className="bg-[#1b2235] px-4 py-3">
+              <p className="text-sm font-black uppercase tracking-[0.06em] text-white">🏆 Global Top 10</p>
+            </div>
+            <div className="divide-y-2 divide-[#1b2235]/20 bg-[#fffef7]">
+              {topDetectives.length === 0 ? (
+                <p className="px-4 py-6 text-sm font-semibold text-slate-500">Loading standings...</p>
+              ) : (
+                topDetectives.map((entry, index) => (
+                  <div key={entry.uid} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#1b2235] bg-white text-xs font-black text-slate-900">
+                        {index + 1}
+                      </span>
+                      <Image
+                        src={avatarImagePath(entry.avatar)}
+                        alt={entry.displayName}
+                        width={26}
+                        height={26}
+                        className="h-6 w-6 rounded-full border-2 border-[#1b2235] object-cover"
+                      />
+                      <span className="text-sm font-bold text-slate-900">{entry.displayName}</span>
+                    </div>
+                    <span className={`text-sm font-black ${index === 0 ? "text-[#ff4b8b]" : "text-slate-800"}`}>{entry.score ?? 0}</span>
+                  </div>
+                ))
+              )}
+            </div>
             <button
               type="button"
-              onClick={joinRoom}
-              disabled={busy || normalizedJoinCode.length !== 6 || !authUser || !profile}
-              className="w-full rounded-xl bg-zinc-900 px-4 py-2 font-bold text-white transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={() => router.push("/leaderboard")}
+              className="w-full border-t-3 border-[#1b2235] bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-slate-700"
             >
-              Join Room
+              View Full Standings
             </button>
-          </div>
+          </aside>
         </section>
 
-        <section className="flex flex-col gap-3 rounded-3xl border border-black/10 bg-white/85 p-5 shadow-xl backdrop-blur sm:flex-row">
-          <button
-            type="button"
-            onClick={() => router.push("/leaderboard")}
-            className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2 font-semibold text-zinc-800 transition hover:bg-zinc-100"
-          >
-            Open Leaderboard
-          </button>
-          <button
-            type="button"
-            onClick={() => signOut(auth)}
-            className="w-full rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 font-semibold text-rose-800 transition hover:bg-rose-100"
-          >
-            Sign out
-          </button>
-        </section>
-
-        {error ? <p className="rounded-2xl bg-rose-100 px-4 py-3 text-sm font-semibold text-rose-800">{error}</p> : null}
+        {error ? <p className="mt-4 border border-rose-800/40 bg-rose-100 px-4 py-3 text-sm font-semibold text-rose-900">{error}</p> : null}
       </div>
     </main>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
@@ -15,7 +16,7 @@ import {
   update,
 } from "firebase/database";
 import { auth, db } from "@/lib/firebase";
-import { TURN_MS, TURN_SECONDS, sortPlayers } from "@/lib/game";
+import { avatarImagePath, resolveCountry, TURN_MS, TURN_SECONDS, sortPlayers } from "@/lib/game";
 import type { Room, RoomPlayer, RoomRound, TurnSubmission, UserProfile } from "@/lib/types";
 
 function countVotes(votes: Record<string, string> | undefined): Record<string, number> {
@@ -101,7 +102,7 @@ export default function RoomPage() {
       const player: RoomPlayer = {
         uid: profile.uid,
         displayName: profile.displayName,
-        country: profile.country,
+        country: resolveCountry(profile.country),
         avatar: profile.avatar,
         photoURL: profile.photoURL,
         score: profile.score ?? 0,
@@ -444,46 +445,54 @@ export default function RoomPage() {
   }
 
   if (loading) {
-    return <main className="min-h-screen p-8">Loading room...</main>;
+    return (
+      <main className="noir-shell">
+        <section className="noir-frame max-w-3xl p-6 text-center">
+          <p className="text-lg font-semibold uppercase text-slate-800">Loading case file...</p>
+        </section>
+      </main>
+    );
   }
 
   if (!room) {
     return (
-      <main className="min-h-screen p-8">
-        <p className="text-lg font-semibold text-rose-700">{error || "Room not found."}</p>
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard")}
-          className="mt-4 rounded-xl border border-zinc-300 bg-white px-4 py-2 font-semibold"
-        >
-          Back to Dashboard
-        </button>
+      <main className="noir-shell">
+        <section className="noir-frame max-w-3xl space-y-4 p-6">
+          <p className="text-lg font-semibold text-rose-800">{error || "Room not found."}</p>
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className="noir-btn-ghost px-4 py-2 text-sm uppercase tracking-[0.08em]"
+          >
+            Back To Dashboard
+          </button>
+        </section>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_5%_15%,#fee2e2_0%,#fef9c3_45%,#dcfce7_100%)] px-4 py-6 sm:px-8">
-      <section className="mx-auto w-full max-w-5xl space-y-4">
-        <header className="rounded-3xl border border-black/10 bg-white/85 p-5 shadow-xl backdrop-blur sm:p-6">
+    <main className="noir-shell">
+      <section className="noir-frame max-w-7xl space-y-4 p-3 sm:p-4">
+        <header className="noir-panel p-4 sm:p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.25em] text-zinc-600">Room {room.roomId}</p>
-              <h1 className="mt-1 text-3xl font-black text-zinc-900">Find the Imposter</h1>
-              <p className="mt-1 text-sm text-zinc-700">Status: {room.status.toUpperCase()}</p>
+              <p className="noir-label">Case File {room.roomId}</p>
+              <h1 className="noir-title mt-1 text-2xl font-bold sm:text-4xl">Phase: {room.status}</h1>
+              <p className="noir-screen-id mt-1">Screen ID: N-003 Interrogation</p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex w-full gap-2 sm:w-auto">
               <button
                 type="button"
                 onClick={() => router.push("/dashboard")}
-                className="rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 hover:bg-zinc-100"
+                className="noir-btn-ghost w-full px-4 py-2 text-xs uppercase tracking-[0.08em] sm:w-auto"
               >
                 Dashboard
               </button>
               <button
                 type="button"
                 onClick={handleLeaveRoom}
-                className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-2 text-sm font-semibold text-rose-800 hover:bg-rose-100"
+                className="w-full rounded-full border-3 border-[#1b2235] bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-[0.08em] text-[#d22f67] sm:w-auto"
               >
                 Leave
               </button>
@@ -491,30 +500,60 @@ export default function RoomPage() {
           </div>
         </header>
 
-        <section className="grid gap-4 lg:grid-cols-[1.2fr_1fr]">
-          <div className="space-y-4 rounded-3xl border border-black/10 bg-white/85 p-5 shadow-xl backdrop-blur">
-            <div className="flex items-center justify-between gap-2">
-              <h2 className="text-2xl font-black text-zinc-900">Players</h2>
-              <p className="text-sm font-semibold text-zinc-700">{players.length} connected</p>
+        <section className="grid gap-4 xl:grid-cols-[260px_minmax(0,1fr)_320px]">
+          <aside className="noir-panel p-3 sm:p-4">
+            <div className="noir-divider flex items-center justify-between pb-2">
+              <h2 className="text-xl font-bold uppercase text-slate-900">Suspects</h2>
+              <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600">{players.length}</p>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-2">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
               {players.map((player) => {
                 const isTurn = player.uid === activeTurnUid && room.status === "playing";
                 return (
-                  <div
+                  <article
                     key={player.uid}
-                    className={`rounded-xl border p-3 text-sm ${
-                      isTurn ? "border-emerald-500 bg-emerald-50" : "border-zinc-200 bg-zinc-50"
+                    className={`relative border p-2.5 text-sm ${
+                      isTurn
+                        ? "border-[#1b2235] bg-[#e1f6ff]"
+                        : "border-[#1b2235]/45 bg-[#fffefb]"
                     }`}
                   >
-                    <p className="font-bold text-zinc-900">{player.displayName}</p>
-                    <p className="text-zinc-700">{player.avatar} | {player.country}</p>
-                    <p className="text-zinc-700">Score: {player.score ?? 0}</p>
-                    {player.isHost ? <p className="mt-1 text-xs font-semibold text-amber-700">Host</p> : null}
-                  </div>
+                    <Image
+                      src={avatarImagePath(player.avatar)}
+                      alt={player.displayName}
+                      width={44}
+                      height={44}
+                      className="mb-2 h-11 w-11 rounded-full border-2 border-[#1b2235] object-cover"
+                    />
+                    <p className="font-bold uppercase text-slate-900">{player.displayName}</p>
+                    <p className="text-xs text-slate-600">{resolveCountry(player.country)}</p>
+                    <p className="text-xs font-semibold text-slate-700">Score {player.score ?? 0}</p>
+                    {player.isHost ? <p className="mt-1 text-[11px] font-bold uppercase text-amber-800">Chief</p> : null}
+                    {isTurn ? <span className="noir-stamp absolute right-2 top-2">Speaking</span> : null}
+                  </article>
                 );
               })}
+            </div>
+          </aside>
+
+          <div className="noir-panel p-3 sm:p-4">
+            <div className="noir-divider flex items-center justify-between pb-2">
+              <h2 className="text-xl font-bold uppercase text-slate-900">The Log</h2>
+              {room.status === "playing" ? (
+                <p className="rounded-full border-3 border-[#1b2235] bg-[#ffc93b] px-3 py-1 text-lg font-extrabold text-[#1b2235]">{secondsLeft}s</p>
+              ) : null}
+            </div>
+
+            <div className="mt-3 min-h-60 space-y-1 border border-slate-400/40 bg-[#fbfbf9] p-3 text-sm">
+              {submissions.length === 0 ? <p className="text-slate-500">No clues yet.</p> : null}
+              {submissions.map((entry) => (
+                <p key={`${entry.uid}-${entry.submittedAt}`} className="text-slate-700">
+                  <span className="font-bold text-slate-900">{playersByUid.get(entry.uid)?.displayName ?? "Unknown"}:</span>{" "}
+                  {entry.clue}
+                  {entry.autoSubmitted ? " (auto)" : ""}
+                </p>
+              ))}
             </div>
 
             <AnimatePresence mode="wait">
@@ -524,20 +563,20 @@ export default function RoomPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+                  className="mt-4 border border-slate-500/40 bg-[#f2f1ec] p-3"
                 >
-                  <p className="text-sm text-zinc-700">Waiting in lobby. Minimum 3 players required.</p>
+                  <p className="text-sm text-slate-700">Awaiting full detachment. Minimum 3 players required.</p>
                   {isHost ? (
                     <button
                       type="button"
                       onClick={handleStartGame}
                       disabled={busy || players.length < 3}
-                      className="w-full rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      className="noir-btn mt-3 w-full px-4 py-2 text-sm"
                     >
-                      {busy ? "Starting..." : "Start Game"}
+                      {busy ? "Starting..." : "Start Investigation"}
                     </button>
                   ) : (
-                    <p className="text-sm font-semibold text-zinc-700">Host will start the game.</p>
+                    <p className="mt-3 text-sm font-semibold text-slate-700">Host will initiate the case.</p>
                   )}
                 </motion.div>
               ) : null}
@@ -548,19 +587,15 @@ export default function RoomPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+                  className="mt-4 border border-slate-500/40 bg-[#f2f1ec] p-3"
                 >
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-bold text-zinc-900">Clue Round</p>
-                    <p className="rounded-full bg-zinc-900 px-3 py-1 text-sm font-bold text-white">{secondsLeft}s</p>
-                  </div>
-
-                  <p className="text-sm text-zinc-700">
-                    Turn: <span className="font-bold">{playersByUid.get(activeTurnUid ?? "")?.displayName ?? "Unknown"}</span>
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600">Active Subject</p>
+                  <p className="mt-1 text-sm font-semibold text-slate-900">
+                    {playersByUid.get(activeTurnUid ?? "")?.displayName ?? "Unknown"}
                   </p>
 
                   {authUser?.uid === activeTurnUid ? (
-                    <div className="space-y-2">
+                    <div className="mt-3 space-y-2">
                       <input
                         value={clueInput}
                         onChange={(event) => setClueInput(event.target.value)}
@@ -570,28 +605,28 @@ export default function RoomPage() {
                           }
                         }}
                         maxLength={32}
-                        placeholder="Type your clue"
-                        className="w-full rounded-xl border border-zinc-300 bg-white px-3 py-2 outline-none ring-emerald-300 transition focus:ring-2"
+                        placeholder="Type 1 word..."
+                        className="noir-input"
                       />
                       <button
                         type="button"
                         onClick={() => void submitTurn(false)}
-                        className="w-full rounded-xl bg-zinc-900 px-4 py-2 font-bold text-white transition hover:bg-zinc-800"
+                        className="noir-btn w-full px-4 py-2 text-sm"
                       >
-                        Submit Clue
+                        Submit
                       </button>
                     </div>
                   ) : (
-                    <p className="text-sm font-semibold text-zinc-700">Wait for the active player to submit.</p>
+                    <p className="mt-2 text-sm text-slate-700">Awaiting current detective response.</p>
                   )}
 
                   <button
                     type="button"
                     onClick={() => void handleReadyToVote()}
                     disabled={!!myReadyState}
-                    className="w-full rounded-xl border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="noir-btn-ghost mt-3 w-full px-4 py-2 text-xs uppercase tracking-[0.08em] disabled:opacity-50"
                   >
-                    {myReadyState ? "You are ready" : "Ready to guess imposter"}
+                    {myReadyState ? "Ready Confirmed" : "Ready To Guess Imposter"}
                   </button>
                 </motion.div>
               ) : null}
@@ -602,31 +637,38 @@ export default function RoomPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+                  className="mt-4 border border-slate-500/40 bg-[#f2f1ec] p-3"
                 >
-                  <p className="font-bold text-zinc-900">Voting Phase</p>
-                  <p className="text-sm text-zinc-700">Choose who you think is the imposter.</p>
+                  <p className="noir-title text-xl font-bold text-slate-900">Who Is Lying?</p>
+                  <p className="mt-1 text-sm text-slate-700">Select one suspect and lock your vote.</p>
 
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
                     {players.map((player) => (
                       <button
                         key={player.uid}
                         type="button"
                         onClick={() => void handleVote(player.uid)}
                         disabled={!!myVote}
-                        className="rounded-xl border border-zinc-300 bg-white px-3 py-2 text-left font-semibold text-zinc-800 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="flex items-center gap-2 rounded-2xl border-3 border-[#1b2235] bg-white px-3 py-2 text-left text-sm font-extrabold uppercase text-slate-900 transition hover:bg-[#fff0f7] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        Vote {player.displayName}
+                        <Image
+                          src={avatarImagePath(player.avatar)}
+                          alt={player.displayName}
+                          width={34}
+                          height={34}
+                          className="h-8 w-8 rounded-full border-2 border-[#1b2235] object-cover"
+                        />
+                        {player.displayName}
                       </button>
                     ))}
                   </div>
 
-                  <p className="text-sm text-zinc-700">
-                    Votes submitted: {Object.keys(room.round?.votes ?? {}).length}/{players.length}
+                  <p className="mt-3 text-sm text-slate-700">
+                    Votes: {Object.keys(room.round?.votes ?? {}).length}/{players.length}
                   </p>
                   {myVote ? (
-                    <p className="text-sm font-semibold text-emerald-700">
-                      You voted for {playersByUid.get(myVote)?.displayName ?? "Unknown"}.
+                    <p className="mt-1 text-sm font-extrabold text-[#169ed1]">
+                      Vote locked on {playersByUid.get(myVote)?.displayName ?? "Unknown"}.
                     </p>
                   ) : null}
                 </motion.div>
@@ -638,20 +680,19 @@ export default function RoomPage() {
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  className="space-y-3 rounded-2xl border border-zinc-200 bg-zinc-50 p-4"
+                  className="mt-4 border border-slate-500/40 bg-[#f2f1ec] p-3"
                 >
-                  <p className="text-2xl font-black text-zinc-900">Round Result</p>
-                  <p className="text-zinc-700">
-                    Imposter: <span className="font-bold">{playersByUid.get(room.round?.imposterUid ?? "")?.displayName ?? "Unknown"}</span>
+                  <p className="noir-title text-2xl font-bold text-slate-900">
+                    {room.round?.result?.imposterCaught ? "Imposter Caught" : "Imposter Escaped"}
                   </p>
-                  <p className="rounded-xl bg-zinc-900 px-3 py-2 text-sm font-bold text-white">
-                    {room.round?.result?.imposterCaught ? "Crew wins" : "Imposter wins"}
+                  <p className="mt-1 text-sm text-slate-700">
+                    Target: <span className="font-bold">{playersByUid.get(room.round?.imposterUid ?? "")?.displayName ?? "Unknown"}</span>
                   </p>
 
-                  <div className="space-y-1 rounded-xl border border-zinc-200 bg-white p-3 text-sm text-zinc-700">
-                    <p className="font-bold text-zinc-900">Vote Tally</p>
+                  <div className="mt-3 border border-slate-400/50 bg-white p-3 text-sm">
+                    <p className="font-bold uppercase text-slate-900">Vote Tally</p>
                     {players.map((player) => (
-                      <p key={`tally-${player.uid}`}>
+                      <p key={`tally-${player.uid}`} className="text-slate-700">
                         {player.displayName}: {voteTally[player.uid] ?? 0}
                       </p>
                     ))}
@@ -661,46 +702,36 @@ export default function RoomPage() {
                     <button
                       type="button"
                       onClick={() => void handleBackToLobby()}
-                      className="w-full rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white transition hover:bg-emerald-700"
+                      className="noir-btn mt-3 w-full px-4 py-2 text-sm"
                     >
-                      Back to Lobby
+                      Open New Case
                     </button>
                   ) : (
-                    <p className="text-sm text-zinc-700">Waiting for host to reset to lobby.</p>
+                    <p className="mt-3 text-sm text-slate-700">Awaiting host to reopen lobby.</p>
                   )}
                 </motion.div>
               ) : null}
             </AnimatePresence>
           </div>
 
-          <aside className="space-y-4 rounded-3xl border border-black/10 bg-white/85 p-5 shadow-xl backdrop-blur">
-            <h2 className="text-2xl font-black text-zinc-900">Round Intel</h2>
+          <aside className="noir-panel p-3 sm:p-4">
+            <div className="noir-divider pb-2">
+              <p className="noir-label">Classified Intel</p>
+              <h2 className="mt-1 text-xl font-bold uppercase text-slate-900">Your Brief</h2>
+            </div>
 
             {room.status !== "lobby" ? (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">Your Secret Word</p>
-                <p className="mt-1 text-2xl font-black text-zinc-900">{mySecretWord ?? "Waiting..."}</p>
+              <div className="mt-3 rounded-2xl border-3 border-[#1b2235] bg-white p-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate-600">Target Subject</p>
+                <p className="mt-1 text-2xl font-bold uppercase text-[#ff4b8b]">{mySecretWord ?? "Waiting"}</p>
               </div>
             ) : (
-              <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-700">
-                Secrets are assigned when the host starts a round.
+              <div className="mt-3 rounded-2xl border-3 border-[#1b2235]/50 bg-[#fafaf8] p-3 text-sm text-slate-700">
+                Secret words are assigned once the host starts the investigation.
               </div>
             )}
 
-            <div className="rounded-xl border border-zinc-200 bg-zinc-50 p-3">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-600">Submission Log</p>
-              <ul className="mt-2 space-y-1 text-sm text-zinc-700">
-                {submissions.length === 0 ? <li>No clues yet.</li> : null}
-                {submissions.map((entry) => (
-                  <li key={`${entry.uid}-${entry.submittedAt}`}>
-                    <span className="font-bold">{playersByUid.get(entry.uid)?.displayName ?? "Unknown"}:</span> {entry.clue}
-                    {entry.autoSubmitted ? " (auto)" : ""}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {error ? <p className="rounded-xl bg-rose-100 px-3 py-2 text-sm font-semibold text-rose-800">{error}</p> : null}
+            {error ? <p className="mt-3 rounded-2xl border-3 border-[#1b2235] bg-[#ffe9f2] p-3 text-sm font-semibold text-[#a31f4b]">{error}</p> : null}
           </aside>
         </section>
       </section>

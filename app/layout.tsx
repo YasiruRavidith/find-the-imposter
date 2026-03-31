@@ -1,21 +1,22 @@
 import type { Metadata } from "next";
-import { Bungee, Space_Grotesk } from "next/font/google";
+import { Barlow_Condensed, Nunito } from "next/font/google";
 import "./globals.css";
 
-const bungee = Bungee({
+const barlow = Barlow_Condensed({
   variable: "--font-display",
-  weight: "400",
+  weight: ["600", "700", "800"],
   subsets: ["latin"],
 });
 
-const spaceGrotesk = Space_Grotesk({
+const nunito = Nunito({
   variable: "--font-body",
+  weight: ["500", "600", "700", "800"],
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
   title: "Find the Imposter",
-  description: "Real-time multiplayer social deduction game with Next.js and Firebase",
+  description: "Realtime social deduction game with colorful detective-style interface",
 };
 
 export default function RootLayout({
@@ -26,7 +27,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${bungee.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${barlow.variable} ${nunito.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
