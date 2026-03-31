@@ -86,13 +86,15 @@ export default function LeaderboardPage() {
                     <td className="px-4 py-3 font-bold">{index + 1}</td>
                     <td className="px-4 py-3">{user.displayName}</td>
                     <td className="px-4 py-3">
-                      <Image
-                        src={avatarImagePath(user.avatar)}
-                        alt={user.displayName}
-                        width={32}
-                        height={32}
-                        className="h-8 w-8 rounded-full border-2 border-[#1b2235] object-cover"
-                      />
+                      <div className="h-8 w-8 overflow-hidden rounded-full border-2 border-[#1b2235] bg-white">
+                        <Image
+                          src={avatarImagePath(user.avatar)}
+                          alt={user.displayName}
+                          width={32}
+                          height={32}
+                          className="h-full w-full scale-[1.3] object-cover"
+                        />
+                      </div>
                     </td>
                     <td className="px-4 py-3">{resolveCountry(user.country)}</td>
                     <td className="px-4 py-3 font-bold">{user.score ?? 0}</td>

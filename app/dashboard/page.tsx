@@ -137,92 +137,94 @@ export default function DashboardPage() {
 
   return (
     <main className="noir-shell">
-      <div className="noir-frame max-w-6xl p-4 sm:p-6">
-        <header className="noir-divider pb-4">
+      <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6">
+        <header className="noir-divider pb-5 sm:pb-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">🔺</span>
               <p className="text-sm font-black uppercase tracking-[0.05em] text-slate-900">Imposter Word</p>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => router.push("/profile")}
-                className="flex h-10 w-10 items-center justify-center rounded-full border-3 border-[#1b2235] bg-white text-lg shadow-[0_4px_0_rgba(27,34,53,0.18)]"
-                aria-label="Profile settings"
-              >
-                ⚙️
-              </button>
-              <button
-                type="button"
-                onClick={() => router.push("/leaderboard")}
-                className="flex h-10 w-10 items-center justify-center rounded-full border-3 border-[#1b2235] bg-[#19b8f2] text-lg shadow-[0_4px_0_rgba(27,34,53,0.18)]"
-                aria-label="Open leaderboard"
-              >
-                🙂
-              </button>
-            </div>
-          </div>
-          <div className="mt-4 flex items-start justify-between gap-4">
-            <div>
-              <h1 className="text-4xl font-black leading-tight text-slate-900 sm:text-6xl">
-                Ready to play,
-                <span className="ml-2 text-[#ff4b8b]">{profile?.displayName ?? "Detective"}</span>?
-              </h1>
-              <p className="mt-2 max-w-lg text-base font-semibold text-slate-700">
-                Create a new game room or enter a code to join your friends.
-              </p>
-            </div>
-            {profile ? (
+            <div className="flex items-center">
+                {profile ? (
               <div className="hidden items-center gap-2 rounded-full border-3 border-[#1b2235] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 md:flex">
-                <Image
-                  src={avatarImagePath(profile.avatar)}
-                  alt={profile.displayName}
-                  width={26}
-                  height={26}
-                  className="h-6 w-6 rounded-full border-2 border-[#1b2235] object-cover"
-                />
                 <span>{resolveCountry(profile.country)}</span>
                 <span>|</span>
                 <span>{profile.score} pts</span>
               </div>
             ) : null}
+              <button
+                type="button"
+                onClick={() => router.push("/profile")}
+                className="flex items-center gap-3 rounded-full px-2.5 py-1.5 text-sm font-extrabold uppercase tracking-[0.07em] text-slate-900 transition hover:-translate-y-0.5"
+                aria-label="Profile settings"
+              >
+                {profile ? (
+                  <div className="h-13 w-13 overflow-hidden rounded-full border-3 border-[#1b2235] bg-white">
+                    <Image
+                      src={avatarImagePath(profile.avatar)}
+                      alt={profile.displayName}
+                      width={44}
+                      height={44}
+                      className="h-full w-full scale-[1.3] object-cover"
+                    />
+                  </div>
+                ) : (
+                  <span className="flex h-13 w-13 items-center justify-center rounded-full border-3 border-[#1b2235] bg-[#eef7ff] text-xl">🙂</span>
+                )}
+                
+              </button>
+            </div>
+          </div>
+          <div className="mt-7 flex items-start justify-between gap-4 sm:mt-8">
+            <div>
+              <h1 className="text-[2.65rem] font-black leading-[0.98] text-slate-900 sm:text-[3.2rem]">
+                Ready to play,
+                <span className="ml-2 text-[#ff4b8b] underline decoration-[#f9c52f] decoration-[3px] underline-offset-[5px]">
+                  {profile?.displayName ?? "Detective"}
+                </span>
+                ?
+              </h1>
+              <p className="mt-2.5 max-w-120 text-[1.15rem] font-semibold leading-snug text-slate-800">
+                Create a new game room or enter a code to join your friends.
+              </p>
+            </div>
+            
           </div>
         </header>
 
-        <section className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.85fr]">
-          <div className="space-y-4">
+        <section className="mt-9 grid items-start gap-8 lg:mt-10 lg:grid-cols-[minmax(540px,1fr)_370px] lg:gap-10">
+          <div className="max-w-140 space-y-6">
             <button
               type="button"
               onClick={createRoom}
               disabled={busy || !authUser || !profile}
-              className="noir-btn w-full px-5 py-3 text-xl"
+              className="noir-btn h-19.5 w-full px-7 text-[2rem] leading-none"
             >
               {busy ? "Opening..." : "✚ Create Game"}
             </button>
-            <p className="text-center text-xs font-semibold text-slate-500">Host a new game and invite others</p>
+            <p className="text-center text-sm font-semibold text-slate-500">Host a new game and invite others</p>
 
-            <div className="flex items-center gap-3 py-1">
+            <div className="flex items-center gap-3 py-2">
               <span className="h-px flex-1 bg-[#1b2235]/20" />
-              <span className="text-xs font-black uppercase tracking-[0.12em] text-slate-400">OR</span>
+              <span className="text-sm font-black uppercase tracking-[0.12em] text-slate-400">OR</span>
               <span className="h-px flex-1 bg-[#1b2235]/20" />
             </div>
 
-            <div className="noir-panel bg-[linear-gradient(120deg,#ffffff_0%,#e6f7ff_100%)] p-4 sm:p-5">
-              <p className="text-sm font-black text-slate-900">🧑‍💼 Join a Room</p>
-              <div className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+            <div className="noir-panel bg-[linear-gradient(120deg,#ffffff_0%,#e6f7ff_100%)] px-5 py-5 sm:px-6 sm:py-6">
+              <p className="text-2xl font-black text-slate-900">🧑‍💼 Join a Room</p>
+              <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                 <input
                   value={joinCodeInput}
                   onChange={(event) => setJoinCodeInput(event.target.value)}
                   placeholder="ENTER 6-LETTER CODE"
                   maxLength={6}
-                  className="noir-input font-mono text-sm tracking-[0.12em] uppercase"
+                  className="noir-input h-14.5 font-mono text-sm tracking-widest uppercase"
                 />
                 <button
                   type="button"
                   onClick={joinRoom}
                   disabled={busy || normalizedJoinCode.length !== 6 || !authUser || !profile}
-                  className="noir-btn-ghost px-7 py-2 text-sm"
+                  className="noir-btn-ghost h-14.5 px-9 text-xl"
                 >
                   Join →
                 </button>
@@ -247,30 +249,32 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <aside className="noir-panel overflow-hidden p-0">
-            <div className="bg-[#1b2235] px-4 py-3">
-              <p className="text-sm font-black uppercase tracking-[0.06em] text-white">🏆 Global Top 10</p>
+          <aside className="noir-panel self-start overflow-hidden p-0 lg:ml-auto lg:w-90">
+            <div className="bg-[#1b2235] px-5 py-4">
+              <p className="text-[1.75rem] font-black uppercase leading-none tracking-[0.02em] text-white">🏆 Global Top 10</p>
             </div>
             <div className="divide-y-2 divide-[#1b2235]/20 bg-[#fffef7]">
               {topDetectives.length === 0 ? (
                 <p className="px-4 py-6 text-sm font-semibold text-slate-500">Loading standings...</p>
               ) : (
                 topDetectives.map((entry, index) => (
-                  <div key={entry.uid} className="flex items-center justify-between gap-3 px-4 py-2.5">
+                  <div key={entry.uid} className="flex items-center justify-between gap-3 px-5 py-3.5">
                     <div className="flex items-center gap-2.5">
-                      <span className="flex h-6 w-6 items-center justify-center rounded-full border-2 border-[#1b2235] bg-white text-xs font-black text-slate-900">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full border-2 border-[#1b2235] bg-white text-sm font-black text-slate-900">
                         {index + 1}
                       </span>
-                      <Image
-                        src={avatarImagePath(entry.avatar)}
-                        alt={entry.displayName}
-                        width={26}
-                        height={26}
-                        className="h-6 w-6 rounded-full border-2 border-[#1b2235] object-cover"
-                      />
-                      <span className="text-sm font-bold text-slate-900">{entry.displayName}</span>
+                      <div className="h-8 w-8 overflow-hidden rounded-full border-2 border-[#1b2235] bg-white">
+                        <Image
+                          src={avatarImagePath(entry.avatar)}
+                          alt={entry.displayName}
+                          width={30}
+                          height={30}
+                          className="h-full w-full scale-[1.3] object-cover"
+                        />
+                      </div>
+                      <span className="text-[1.08rem] font-bold text-slate-900">{entry.displayName}</span>
                     </div>
-                    <span className={`text-sm font-black ${index === 0 ? "text-[#ff4b8b]" : "text-slate-800"}`}>{entry.score ?? 0}</span>
+                    <span className={`text-[1.12rem] font-black ${index === 0 ? "text-[#ff4b8b]" : "text-slate-800"}`}>{entry.score ?? 0}</span>
                   </div>
                 ))
               )}
@@ -278,7 +282,7 @@ export default function DashboardPage() {
             <button
               type="button"
               onClick={() => router.push("/leaderboard")}
-              className="w-full border-t-3 border-[#1b2235] bg-white px-4 py-3 text-xs font-black uppercase tracking-[0.08em] text-slate-700"
+              className="w-full border-t-3 border-[#1b2235] bg-white px-4 py-4 text-sm font-black uppercase tracking-[0.08em] text-slate-700"
             >
               View Full Standings
             </button>

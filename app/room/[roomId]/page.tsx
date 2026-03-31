@@ -519,13 +519,15 @@ export default function RoomPage() {
                         : "border-[#1b2235]/45 bg-[#fffefb]"
                     }`}
                   >
-                    <Image
-                      src={avatarImagePath(player.avatar)}
-                      alt={player.displayName}
-                      width={44}
-                      height={44}
-                      className="mb-2 h-11 w-11 rounded-full border-2 border-[#1b2235] object-cover"
-                    />
+                    <div className="mb-2 h-11 w-11 overflow-hidden rounded-full border-2 border-[#1b2235] bg-white">
+                      <Image
+                        src={avatarImagePath(player.avatar)}
+                        alt={player.displayName}
+                        width={44}
+                        height={44}
+                        className="h-full w-full scale-[1.3] object-cover"
+                      />
+                    </div>
                     <p className="font-bold uppercase text-slate-900">{player.displayName}</p>
                     <p className="text-xs text-slate-600">{resolveCountry(player.country)}</p>
                     <p className="text-xs font-semibold text-slate-700">Score {player.score ?? 0}</p>
@@ -651,13 +653,15 @@ export default function RoomPage() {
                         disabled={!!myVote}
                         className="flex items-center gap-2 rounded-2xl border-3 border-[#1b2235] bg-white px-3 py-2 text-left text-sm font-extrabold uppercase text-slate-900 transition hover:bg-[#fff0f7] disabled:cursor-not-allowed disabled:opacity-50"
                       >
-                        <Image
-                          src={avatarImagePath(player.avatar)}
-                          alt={player.displayName}
-                          width={34}
-                          height={34}
-                          className="h-8 w-8 rounded-full border-2 border-[#1b2235] object-cover"
-                        />
+                        <div className="h-8 w-8 overflow-hidden rounded-full border-2 border-[#1b2235] bg-white">
+                          <Image
+                            src={avatarImagePath(player.avatar)}
+                            alt={player.displayName}
+                            width={34}
+                            height={34}
+                            className="h-full w-full scale-[1.3] object-cover"
+                          />
+                        </div>
                         {player.displayName}
                       </button>
                     ))}
