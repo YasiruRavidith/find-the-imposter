@@ -1,36 +1,93 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Find the Imposter
 
-## Getting Started
+Real-time multiplayer social deduction game built with Next.js App Router and Firebase Realtime Database.
 
-First, run the development server:
+## Features
+
+- Google authentication
+- Profile setup (country + avatar)
+- Internet room system with 6-character room codes
+- Realtime lobby sync and host controls
+- Gemini-powered word pair generation (with fallback list)
+- Turn-based clue loop with 20-second timer and auto "Didn't answer"
+- Voting phase and result reveal
+- Global leaderboard backed by Firebase
+
+## Tech Stack
+
+- Next.js
+- Firebase Authentication
+- Firebase Realtime Database
+- Google Gen AI SDK (@google/genai)
+
+## Setup
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Copy env template and set credentials:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Fill `.env.local` with:
+
+- `NEXT_PUBLIC_FIREBASE_API_KEY`
+- `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN`
+- `NEXT_PUBLIC_FIREBASE_DATABASE_URL`
+- `NEXT_PUBLIC_FIREBASE_PROJECT_ID`
+- `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET`
+- `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
+- `NEXT_PUBLIC_FIREBASE_APP_ID`
+- `GEMINI_API_KEY` (optional but recommended)
+
+4. Enable Firebase services in your project:
+
+- Authentication -> Google provider
+- Realtime Database -> create database in production mode or test mode
+
+5. Start development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Internet Multiplayer Requirement
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To let users connect over the internet, use a hosted Firebase project (not local-only emulator settings) and deploy the app to a public URL (for example Vercel). Players can then join each other by room code from different networks.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Suggested Realtime Database Rules (Starter)
 
-## Learn More
+You should tighten these for production. This starter keeps user and room writes scoped to authenticated users.
 
-To learn more about Next.js, take a look at the following resources:
+```json
+{
+	"rules": {
+		"users": {
+			"$uid": {
+				".read": "auth != null",
+				".write": "auth != null && auth.uid === $uid"
+			}
+		},
+		"rooms": {
+			"$roomId": {
+				".read": "auth != null",
+				".write": "auth != null"
+			}
+		}
+	}
+}
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Verification Checklist
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+1. Open the app in two or more browsers/devices.
+2. Login each user with Google.
+3. Create one room and join from other users using the room code.
+4. Start game and verify each player sees a secret word.
+5. Let a timer expire and confirm automatic "Didn't answer" submission.
+6. Complete voting and verify result + leaderboard score updates.
