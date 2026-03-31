@@ -87,10 +87,12 @@ export default function RoomPage() {
       return;
     }
 
+    const currentUid = authUser.uid;
+
     let cancelled = false;
 
     async function upsertPlayer() {
-      const profileSnap = await get(ref(db, `users/${authUser.uid}`));
+      const profileSnap = await get(ref(db, `users/${currentUid}`));
       if (!profileSnap.exists() || cancelled) {
         return;
       }
@@ -107,7 +109,7 @@ export default function RoomPage() {
         isHost: false,
       };
 
-      await set(ref(db, `rooms/${roomId}/players/${authUser.uid}`), player);
+      await set(ref(db, `rooms/${roomId}/players/${currentUid}`), player);
     }
 
     void upsertPlayer();
@@ -271,6 +273,8 @@ export default function RoomPage() {
       return;
     }
 
+    const scoreDelta = room.round.result.scoreDelta;
+
     async function applyScores() {
       const scoreAppliedRef = ref(db, `rooms/${roomId}/round/result/scoreApplied`);
       const lock = await runTransaction(scoreAppliedRef, (current) => {
@@ -285,7 +289,7 @@ export default function RoomPage() {
       }
 
       const updates: Record<string, unknown> = {};
-      for (const [uid, delta] of Object.entries(room.round?.result?.scoreDelta ?? {})) {
+      for (const [uid, delta] of Object.entries(scoreDelta)) {
         if (delta === 0) {
           continue;
         }
@@ -459,7 +463,7 @@ export default function RoomPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_5%_15%,_#fee2e2_0%,_#fef9c3_45%,_#dcfce7_100%)] px-4 py-6 sm:px-8">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_5%_15%,#fee2e2_0%,#fef9c3_45%,#dcfce7_100%)] px-4 py-6 sm:px-8">
       <section className="mx-auto w-full max-w-5xl space-y-4">
         <header className="rounded-3xl border border-black/10 bg-white/85 p-5 shadow-xl backdrop-blur sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
