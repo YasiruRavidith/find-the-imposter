@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut, type User } from "firebase/auth";
 import { get, ref, set } from "firebase/database";
 import { auth, db } from "@/lib/firebase";
-import { avatarImagePath, generateRoomCode, normalizeRoomCode, resolveCountry } from "@/lib/game";
+import { AVATARS, avatarImagePath, generateRoomCode, normalizeRoomCode, resolveCountry } from "@/lib/game";
 import type { Room, RoomPlayer, UserProfile } from "@/lib/types";
+
+const SOLO_BOT_NAMES = ["Agent Fox", "Cipher Red", "Ghost 09"];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -78,6 +80,7 @@ export default function DashboardPage() {
       const room: Room = {
         roomId,
         hostUid: authUser.uid,
+        mode: "multiplayer",
         status: "lobby",
         createdAt: Date.now(),
         players: {
@@ -90,6 +93,73 @@ export default function DashboardPage() {
       router.push(`/room/${roomId}`);
     } catch {
       setError("Could not create room. Verify database permissions and internet connection.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createSoloRoom() {
+    if (!authUser || !profile) {
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+
+    try {
+      let roomId = generateRoomCode();
+      let guard = 0;
+      while ((await get(ref(db, `rooms/${roomId}`))).exists() && guard < 5) {
+        roomId = generateRoomCode();
+        guard += 1;
+      }
+
+      const hostPlayer: RoomPlayer = {
+        uid: authUser.uid,
+        displayName: profile.displayName,
+        country: resolveCountry(profile.country),
+        avatar: profile.avatar,
+        photoURL: profile.photoURL,
+        score: profile.score ?? 0,
+        joinedAt: Date.now(),
+        isHost: true,
+        isBot: false,
+      };
+
+      const botPlayers: Record<string, RoomPlayer> = {};
+      SOLO_BOT_NAMES.forEach((name, index) => {
+        const uid = `bot_${index + 1}`;
+        botPlayers[uid] = {
+          uid,
+          displayName: name,
+          country: "🌐 Global Account",
+          avatar: AVATARS[(index + 6) % AVATARS.length],
+          photoURL: "",
+          score: 0,
+          joinedAt: Date.now() + index + 1,
+          isHost: false,
+          isBot: true,
+        };
+      });
+
+      const room: Room = {
+        roomId,
+        hostUid: authUser.uid,
+        mode: "solo",
+        difficulty: "medium",
+        status: "lobby",
+        createdAt: Date.now(),
+        players: {
+          [authUser.uid]: hostPlayer,
+          ...botPlayers,
+        },
+        round: null,
+      };
+
+      await set(ref(db, `rooms/${roomId}`), room);
+      router.push(`/room/${roomId}`);
+    } catch {
+      setError("Could not create solo room. Verify database permissions and internet connection.");
     } finally {
       setBusy(false);
     }
@@ -195,7 +265,7 @@ export default function DashboardPage() {
           </div>
           <div className="mt-7 flex items-start justify-between gap-4 sm:mt-8">
             <div>
-              <h1 className="text-[2.1rem] font-black leading-[1] text-slate-900 sm:text-[3.2rem]">
+              <h1 className="text-[2.1rem] font-black leading-none text-slate-900 sm:text-[3.2rem]">
                 Ready to play,
                 <span className="ml-2 text-[#ff4b8b] underline decoration-[#f9c52f] decoration-[3px] underline-offset-[5px]">
                   {profile?.displayName ?? "Detective"}
@@ -219,6 +289,14 @@ export default function DashboardPage() {
               className="noir-btn h-16 w-full px-6 text-xl leading-none sm:h-19.5 sm:px-7 sm:text-[2rem]"
             >
               {busy ? "Opening..." : "✚ Create Game"}
+            </button>
+            <button
+              type="button"
+              onClick={createSoloRoom}
+              disabled={busy || !authUser || !profile}
+              className="noir-btn-ghost h-14 w-full px-6 text-lg leading-none sm:h-16 sm:px-7 sm:text-xl"
+            >
+              {busy ? "Preparing..." : "Play Solo (vs AI)"}
             </button>
             <p className="text-center text-sm font-semibold text-slate-500">Host a new game and invite others</p>
 

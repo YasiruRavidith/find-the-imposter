@@ -46,6 +46,8 @@ export default function RoomGamePage() {
   const [now, setNow] = useState(0);
 
   const autoSubmittingRef = useRef(false);
+  const botTurnInFlightRef = useRef("");
+  const botVoteInFlightRef = useRef("");
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (nextUser) => {
@@ -126,6 +128,7 @@ export default function RoomGamePage() {
   }, [authUser, room, roomId]);
 
   const players = useMemo(() => sortPlayers(room?.players), [room?.players]);
+  const botPlayers = useMemo(() => players.filter((player) => player.isBot), [players]);
   const playersByUid = useMemo(() => {
     const map = new Map<string, RoomPlayer>();
     for (const player of players) {
@@ -204,17 +207,21 @@ export default function RoomGamePage() {
   }, [room?.status]);
 
   const submitTurn = useCallback(
-    async (autoSubmitted: boolean) => {
+    async (options?: { autoSubmitted?: boolean; forcedUid?: string; forcedClue?: string }) => {
       if (!authUser || !roomId) {
         return;
       }
 
-      const clue = autoSubmitted ? "Didn't answer" : clueInput.trim();
-      if (!autoSubmitted && clue.length === 0) {
+      const autoSubmitted = options?.autoSubmitted ?? false;
+      const forcedUid = options?.forcedUid;
+      const forcedClue = options?.forcedClue?.trim();
+
+      const clue = forcedUid ? (forcedClue || "Didn't answer") : autoSubmitted ? "Didn't answer" : clueInput.trim();
+      if (!forcedUid && !autoSubmitted && clue.length === 0) {
         return;
       }
 
-      if (!autoSubmitted) {
+      if (!forcedUid && !autoSubmitted) {
         setClueInput("");
       }
 
@@ -235,7 +242,15 @@ export default function RoomGamePage() {
           return currentRoom;
         }
 
-        if (!autoSubmitted && activeUid !== authUser.uid) {
+        if (forcedUid) {
+          if (!isHost || activeUid !== forcedUid) {
+            return currentRoom;
+          }
+
+          if (!currentRoom.players?.[forcedUid]?.isBot) {
+            return currentRoom;
+          }
+        } else if (!autoSubmitted && activeUid !== authUser.uid) {
           return currentRoom;
         }
 
@@ -269,7 +284,7 @@ export default function RoomGamePage() {
         return currentRoom;
       });
     },
-    [authUser, clueInput, roomId],
+    [authUser, clueInput, isHost, roomId],
   );
 
   useEffect(() => {
@@ -287,7 +302,7 @@ export default function RoomGamePage() {
       }
 
       autoSubmittingRef.current = true;
-      void submitTurn(true).finally(() => {
+      void submitTurn({ autoSubmitted: true }).finally(() => {
         setTimeout(() => {
           autoSubmittingRef.current = false;
         }, 200);
@@ -296,6 +311,65 @@ export default function RoomGamePage() {
 
     return () => clearInterval(interval);
   }, [isHost, room, submitTurn]);
+
+  useEffect(() => {
+    if (!isHost || room?.status !== "playing" || !room.round || room.mode !== "solo" || !activeTurnUid) {
+      return;
+    }
+
+    const activePlayer = room.players?.[activeTurnUid];
+    if (!activePlayer?.isBot) {
+      botTurnInFlightRef.current = "";
+      return;
+    }
+
+    const roundKey = `${roomId}-${room.round.activeTurnIndex}-${activeTurnUid}`;
+    if (botTurnInFlightRef.current === roundKey) {
+      return;
+    }
+    botTurnInFlightRef.current = roundKey;
+
+    const timeout = setTimeout(() => {
+      void (async () => {
+        try {
+          const previousClues = submissions.slice(-8).map((entry) => entry.clue);
+          const response = await fetch("/api/bot-turn", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              secretWord: room.round?.secretWords?.[activeTurnUid],
+              isImposter: room.round?.imposterUid === activeTurnUid,
+              difficulty: room.difficulty ?? "medium",
+              previousClues,
+            }),
+          });
+
+          const payload = (await response.json()) as { clue?: string; error?: string };
+
+          const fallbackClue = (() => {
+            const base = room.round?.secretWords?.[activeTurnUid]?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+            if (!base) {
+              return "signal";
+            }
+            return `${base.slice(0, Math.min(4, base.length))}mark`;
+          })();
+
+          await submitTurn({
+            forcedUid: activeTurnUid,
+            forcedClue: response.ok ? (payload.clue ?? fallbackClue) : fallbackClue,
+          });
+        } catch {
+          const base = room.round?.secretWords?.[activeTurnUid]?.toLowerCase().replace(/[^a-z]/g, "") ?? "";
+          await submitTurn({
+            forcedUid: activeTurnUid,
+            forcedClue: base ? `${base.slice(0, Math.min(4, base.length))}mark` : "signal",
+          });
+        }
+      })();
+    }, 1200);
+
+    return () => clearTimeout(timeout);
+  }, [activeTurnUid, isHost, room, roomId, submissions, submitTurn]);
 
   useEffect(() => {
     if (!isHost || room?.status !== "playing" || !room.round) {
@@ -371,6 +445,8 @@ export default function RoomGamePage() {
       return;
     }
 
+    const voterUid = authUser.uid;
+
     await runTransaction(ref(db, `rooms/${roomId}`), (currentData) => {
       const currentRoom = currentData as Room | null;
       if (!currentRoom || currentRoom.status !== "voting" || !currentRoom.round) {
@@ -380,11 +456,77 @@ export default function RoomGamePage() {
       const round = currentRoom.round;
       round.votes = round.votes ?? {};
 
-      if (round.votes[authUser.uid]) {
+      if (round.votes[voterUid]) {
         return currentRoom;
       }
 
-      round.votes[authUser.uid] = targetUid;
+      round.votes[voterUid] = targetUid;
+
+      const voteEntries = Object.values(round.votes);
+      const playerCount = Object.keys(currentRoom.players ?? {}).length;
+
+      if (voteEntries.length >= playerCount) {
+        const tally = countVotes(round.votes);
+        let maxVotes = -1;
+
+        for (const count of Object.values(tally)) {
+          if (count > maxVotes) {
+            maxVotes = count;
+          }
+        }
+
+        const topVotedUids = Object.entries(tally)
+          .filter(([, count]) => count === maxVotes)
+          .map(([uid]) => uid);
+        const hasTie = topVotedUids.length > 1;
+        const mostVotedUid = hasTie ? null : (topVotedUids[0] ?? null);
+
+        const imposterCaught = !hasTie && mostVotedUid === round.imposterUid;
+        const scoreDelta: Record<string, number> = {};
+
+        for (const uid of Object.keys(currentRoom.players ?? {})) {
+          if (imposterCaught) {
+            scoreDelta[uid] = uid === round.imposterUid ? 0 : 1;
+          } else {
+            scoreDelta[uid] = uid === round.imposterUid ? 1 : 0;
+          }
+        }
+
+        round.result = {
+          mostVotedUid,
+          imposterCaught,
+          scoreDelta,
+          scoreApplied: false,
+          completedAt: Date.now(),
+        };
+
+        currentRoom.status = "result";
+      }
+
+      currentRoom.round = round;
+      return currentRoom;
+    });
+  }
+
+  const handleBotVote = useCallback(async (voterUid: string, targetUid: string) => {
+    if (!isHost || room?.status !== "voting") {
+      return;
+    }
+
+    await runTransaction(ref(db, `rooms/${roomId}`), (currentData) => {
+      const currentRoom = currentData as Room | null;
+      if (!currentRoom || currentRoom.status !== "voting" || !currentRoom.round) {
+        return currentRoom;
+      }
+
+      const round = currentRoom.round;
+      round.votes = round.votes ?? {};
+
+      if (round.votes[voterUid]) {
+        return currentRoom;
+      }
+
+      round.votes[voterUid] = targetUid;
 
       const voteEntries = Object.values(round.votes);
       const playerCount = Object.keys(currentRoom.players ?? {}).length;
@@ -431,7 +573,62 @@ export default function RoomGamePage() {
       currentRoom.round = round;
       return currentRoom;
     });
-  }
+  }, [isHost, room?.status, roomId]);
+
+  useEffect(() => {
+    if (!isHost || room?.status !== "voting" || room.mode !== "solo" || !room.round) {
+      return;
+    }
+
+    const pendingBot = botPlayers.find((bot) => !room.round?.votes?.[bot.uid]);
+    if (!pendingBot) {
+      botVoteInFlightRef.current = "";
+      return;
+    }
+
+    const voteKey = `${roomId}-${pendingBot.uid}-${Object.keys(room.round.votes ?? {}).length}`;
+    if (botVoteInFlightRef.current === voteKey) {
+      return;
+    }
+    botVoteInFlightRef.current = voteKey;
+
+    const timeout = setTimeout(() => {
+      void (async () => {
+        const candidates = players.map((player) => ({
+          uid: player.uid,
+          displayName: player.displayName,
+        }));
+
+        const clueLog = submissions.map((entry) => ({ uid: entry.uid, clue: entry.clue }));
+
+        try {
+          const response = await fetch("/api/bot-vote", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              botUid: pendingBot.uid,
+              candidates,
+              clueLog,
+              difficulty: room.difficulty ?? "medium",
+            }),
+          });
+
+          const payload = (await response.json()) as { targetUid?: string };
+          const validTarget = players.find((player) => player.uid === payload.targetUid && player.uid !== pendingBot.uid);
+          const fallbackTarget = players.find((player) => player.uid !== pendingBot.uid);
+
+          await handleBotVote(pendingBot.uid, validTarget?.uid ?? fallbackTarget?.uid ?? pendingBot.uid);
+        } catch {
+          const fallbackTarget = players.find((player) => player.uid !== pendingBot.uid);
+          if (fallbackTarget) {
+            await handleBotVote(pendingBot.uid, fallbackTarget.uid);
+          }
+        }
+      })();
+    }, 900);
+
+    return () => clearTimeout(timeout);
+  }, [botPlayers, handleBotVote, isHost, players, room, roomId, submissions]);
 
   async function handleBackToLobby() {
     if (!isHost) {
@@ -575,7 +772,7 @@ export default function RoomGamePage() {
                             onChange={(event) => setClueInput(event.target.value)}
                             onKeyDown={(event) => {
                               if (event.key === "Enter") {
-                                void submitTurn(false);
+                                void submitTurn();
                               }
                             }}
                             maxLength={32}
@@ -584,7 +781,7 @@ export default function RoomGamePage() {
                           />
                           <button
                             type="button"
-                            onClick={() => void submitTurn(false)}
+                            onClick={() => void submitTurn()}
                             className="h-11 w-11 rounded-full border-3 border-[#1b2235] bg-[#ff4b8b] text-2xl font-black text-white sm:h-13 sm:w-13 sm:text-3xl"
                             aria-label="Submit clue"
                           >

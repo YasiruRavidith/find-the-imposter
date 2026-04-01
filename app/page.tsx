@@ -211,6 +211,7 @@ export default function Home() {
                           alt={avatar.replace(".png", "")}
                           width={600}
                           height={600}
+                          loading="eager"
                           className="h-full w-full scale-[1.3] object-cover"
                         />
                       </div>

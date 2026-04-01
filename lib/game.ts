@@ -1,4 +1,5 @@
 import type { RoomPlayer } from "@/lib/types";
+import { pickRandomWordPair, WORD_PAIR_LIBRARY } from "@/lib/word-library";
 
 export const TURN_SECONDS = 20;
 export const TURN_MS = TURN_SECONDS * 1000;
@@ -103,18 +104,10 @@ export function resolveCountry(value: string | undefined): string {
   return LEGACY_COUNTRY_MAP[normalized] ?? COUNTRIES[0];
 }
 
-export const FALLBACK_WORD_PAIRS: Array<[string, string]> = [
-  ["Apple", "Pear"],
-  ["Coffee", "Tea"],
-  ["Ocean", "River"],
-  ["Piano", "Guitar"],
-  ["Winter", "Autumn"],
-  ["Rocket", "Airplane"],
-  ["Lion", "Tiger"],
-  ["Mountain", "Hill"],
-  ["Chocolate", "Vanilla"],
-  ["Forest", "Jungle"],
-];
+export const FALLBACK_WORD_PAIRS: Array<[string, string]> = WORD_PAIR_LIBRARY.map((pair) => [
+  pair.common,
+  pair.imposter,
+]);
 
 export function generateRoomCode(length = 6): string {
   let code = "";
@@ -130,7 +123,8 @@ export function normalizeRoomCode(input: string): string {
 }
 
 export function pickRandomPair(): [string, string] {
-  return FALLBACK_WORD_PAIRS[Math.floor(Math.random() * FALLBACK_WORD_PAIRS.length)];
+  const pair = pickRandomWordPair();
+  return [pair.common, pair.imposter];
 }
 
 export function sortPlayers(players: Record<string, RoomPlayer> | undefined): RoomPlayer[] {

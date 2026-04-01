@@ -21,6 +21,7 @@ export type RoomPlayer = {
   score: number;
   joinedAt: number;
   isHost: boolean;
+  isBot?: boolean;
 };
 
 export type TurnSubmission = {
@@ -57,6 +58,8 @@ export type Room = {
   roomId: string;
   hostUid: string;
   status: RoomStatus;
+  mode?: "multiplayer" | "solo";
+  difficulty?: "easy" | "medium" | "hard";
   createdAt: number;
   players: Record<string, RoomPlayer>;
   round: RoomRound | null;

@@ -111,10 +111,21 @@ export default function RoomPage() {
 
     try {
       const response = await fetch("/api/generate-words", { method: "POST" });
-      const payload = (await response.json()) as { common: string; imposter: string };
+      const payload = (await response.json()) as {
+        common?: string;
+        imposter?: string;
+        error?: string;
+      };
 
-      const commonWord = payload.common || "Apple";
-      const imposterWord = payload.imposter || "Pear";
+      if (!response.ok) {
+        throw new Error(payload.error || "Word generation failed");
+      }
+
+      const commonWord = payload.common?.trim().toLowerCase() ?? "";
+      const imposterWord = payload.imposter?.trim().toLowerCase() ?? "";
+      if (!commonWord || !imposterWord || commonWord === imposterWord) {
+        throw new Error("Invalid generated words");
+      }
       const turnOrder = players.map((player) => player.uid);
       const imposterUid = turnOrder[Math.floor(Math.random() * turnOrder.length)];
 
