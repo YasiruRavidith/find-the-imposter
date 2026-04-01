@@ -188,7 +188,7 @@ export default function RoomPage() {
 
   return (
     <main className="noir-shell">
-      <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 sm:px-6 sm:pt-6">
+      <div className="mx-auto w-full max-w-6xl px-3 pb-40 pt-3 sm:px-6 sm:pb-28 sm:pt-6">
         <header className="noir-divider flex items-center justify-between pb-4">
           <div>
             <p className="text-sm font-black uppercase tracking-[0.06em] text-slate-800">Imposter</p>
@@ -205,7 +205,7 @@ export default function RoomPage() {
         <section className="mt-5 flex justify-center">
           <div className="w-full max-w-85 rounded-[36px] border-3 border-[#1b2235] bg-[#f8c63a] px-6 py-4 text-center shadow-[0_4px_0_rgba(27,34,53,0.2)]">
             <p className="text-xs font-black uppercase tracking-[0.14em] text-[#614200]">Room Code</p>
-            <p className="mt-1 text-[2.1rem] font-black uppercase leading-none tracking-[0.2em] text-[#1b2235] sm:text-[2.4rem]">{room.roomId}</p>
+            <p className="mt-1 text-[1.75rem] font-black uppercase leading-none tracking-[0.18em] text-[#1b2235] sm:text-[2.4rem]">{room.roomId}</p>
           </div>
         </section>
 
@@ -255,9 +255,9 @@ export default function RoomPage() {
         ) : null}
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t-3 border-[#1b2235] bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3">
-          <p className="text-sm font-bold text-[#1b2235]">
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t-3 border-[#1b2235] bg-white/95 px-3 py-3 backdrop-blur-sm sm:px-6" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+        <div className="mx-auto flex w-full max-w-6xl flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-center text-sm font-bold text-[#1b2235] sm:text-left">
             {isHost ? "You are host. Start when everyone joins." : "Waiting for host to start..."}
           </p>
 
@@ -266,7 +266,7 @@ export default function RoomPage() {
               type="button"
               onClick={() => void handleStartGame()}
               disabled={busy || players.length < 3}
-              className="noir-btn min-w-42.5 px-7 py-3 text-base disabled:cursor-not-allowed disabled:opacity-50"
+              className="noir-btn w-full px-6 py-3 text-base disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-42.5 sm:px-7"
             >
               {busy ? "Starting..." : "Start Game"}
             </button>
@@ -274,7 +274,7 @@ export default function RoomPage() {
             <button
               type="button"
               disabled
-              className="min-w-42.5 rounded-full border-3 border-[#1b2235] bg-[#f3f4f6] px-7 py-3 text-base font-black uppercase tracking-[0.08em] text-[#6b7280]"
+              className="w-full rounded-full border-3 border-[#1b2235] bg-[#f3f4f6] px-6 py-3 text-base font-black uppercase tracking-[0.08em] text-[#6b7280] sm:w-auto sm:min-w-42.5 sm:px-7"
             >
               Waiting
             </button>

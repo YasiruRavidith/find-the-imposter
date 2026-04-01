@@ -229,11 +229,14 @@ export default function RoomGamePage() {
 
         round.submissions[submissionKey] = submission;
 
-        if (activeIndex + 1 >= totalTurns) {
+        // Derive progress from accepted submissions to avoid stale index jumps.
+        const completedTurns = Object.keys(round.submissions).length;
+        if (completedTurns >= totalTurns) {
           currentRoom.status = "voting";
+          round.activeTurnIndex = totalTurns;
           round.turnEndsAt = 0;
         } else {
-          round.activeTurnIndex = activeIndex + 1;
+          round.activeTurnIndex = completedTurns;
           round.turnEndsAt = Date.now() + TURN_MS;
         }
 
@@ -456,8 +459,8 @@ export default function RoomGamePage() {
       <span className="pointer-events-none absolute bottom-18 left-8 h-14 w-14 rounded-full border-2 border-[#a7b5c7] bg-[#bce8f7]" />
       <span className="pointer-events-none absolute bottom-10 right-8 text-5xl text-[#c9c9cc]">◉</span>
 
-      <div className="mx-auto w-full max-w-4xl px-4 pb-8 pt-4 sm:px-6 sm:pt-6">
-        <header className="mb-6 flex items-center justify-between gap-3">
+      <div className="mx-auto w-full max-w-6xl px-3 pb-24 pt-3 sm:px-6 sm:pb-8 sm:pt-6">
+        <header className="mb-4 flex flex-wrap items-center justify-between gap-2 sm:mb-6 sm:gap-3">
           <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.08em] text-[#1b2235] sm:text-sm">
             <span className="h-3 w-3 rounded-full bg-[#ff4b8b]" />
             Imposter Word
@@ -487,16 +490,16 @@ export default function RoomGamePage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="space-y-8"
+              className="space-y-5 sm:space-y-8"
             >
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <p className="text-sm font-black uppercase tracking-[0.08em] text-[#1b2235]">Hurry Up!</p>
-                  <p className="rounded-full border-3 border-[#1b2235] bg-[#ffc93b] px-3 py-1 text-2xl font-black text-[#1b2235]">
+                  <p className="text-xs font-black uppercase tracking-[0.08em] text-[#1b2235] sm:text-sm">Hurry Up!</p>
+                  <p className="rounded-full border-3 border-[#1b2235] bg-[#ffc93b] px-2.5 py-0.5 text-xl font-black text-[#1b2235] sm:px-3 sm:py-1 sm:text-2xl">
                     {isMyTurn ? secondsLeft.toString().padStart(2, "0") : "--"}
                   </p>
                 </div>
-                <div className="h-7 rounded-full border-3 border-[#1b2235] bg-white p-1">
+                <div className="h-5 rounded-full border-3 border-[#1b2235] bg-white p-1 sm:h-7">
                   <div
                     className={`h-full rounded-full ${isMyTurn ? "bg-[#1eb8ea]" : "bg-[#d2d8e6]"} transition-all`}
                     style={{ width: `${turnProgress}%` }}
@@ -504,13 +507,13 @@ export default function RoomGamePage() {
                 </div>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(260px,0.75fr)]">
-                <section className="rounded-3xl border-3 border-[#1b2235] bg-[#f9f9fa] p-4 shadow-[0_6px_0_rgba(27,34,53,0.16)] sm:p-5">
+              <div className="grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(260px,0.75fr)] lg:items-start">
+                <section className="order-2 rounded-3xl border-3 border-[#1b2235] bg-[#f9f9fa] p-3 shadow-[0_6px_0_rgba(27,34,53,0.16)] sm:p-5 lg:order-1">
                   <div className="mb-2 flex items-center justify-between">
                     <p className="text-sm font-black uppercase tracking-[0.08em] text-[#ff4b8b]">Investigation Log</p>
                     <p className="text-xs font-black uppercase tracking-[0.08em] text-[#1b2235]">Integrity {integrityScore}%</p>
                   </div>
-                  <div className="max-h-105 min-h-70 space-y-2 overflow-y-auto rounded-2xl border-2 border-[#1b2235]/15 bg-white/80 p-3">
+                  <div className="max-h-[52svh] min-h-56 space-y-2 overflow-y-auto rounded-2xl border-2 border-[#1b2235]/15 bg-white/80 p-3 sm:max-h-105 sm:min-h-70">
                     {submissions.length === 0 ? <p className="text-sm font-semibold text-slate-500">No clues yet. Investigation begins now.</p> : null}
                     {submissions.map((entry) => {
                       const mine = entry.uid === authUser?.uid;
@@ -547,12 +550,12 @@ export default function RoomGamePage() {
                             }}
                             maxLength={32}
                             placeholder="ENTER YOUR HINT..."
-                            className="h-16 flex-1 bg-transparent px-6 text-xl font-black uppercase tracking-[0.04em] text-[#1b2235] outline-none placeholder:text-[#a3abc0] sm:text-2xl"
+                            className="h-13 flex-1 bg-transparent px-4 text-base font-black uppercase tracking-[0.04em] text-[#1b2235] outline-none placeholder:text-[#a3abc0] sm:h-16 sm:px-6 sm:text-2xl"
                           />
                           <button
                             type="button"
                             onClick={() => void submitTurn(false)}
-                            className="h-13 w-13 rounded-full border-3 border-[#1b2235] bg-[#ff4b8b] text-3xl font-black text-white"
+                            className="h-11 w-11 rounded-full border-3 border-[#1b2235] bg-[#ff4b8b] text-2xl font-black text-white sm:h-13 sm:w-13 sm:text-3xl"
                             aria-label="Submit clue"
                           >
                             →
@@ -568,13 +571,13 @@ export default function RoomGamePage() {
                   </div>
                 </section>
 
-                <aside className="space-y-3 rounded-3xl border-3 border-[#1b2235] bg-[#f9f9fa] p-4 shadow-[0_6px_0_rgba(27,34,53,0.16)] sm:p-5">
+                <aside className="order-1 space-y-3 rounded-3xl border-3 border-[#1b2235] bg-[#f9f9fa] p-3 shadow-[0_6px_0_rgba(27,34,53,0.16)] sm:p-5 lg:order-2">
                   <p className="text-xs font-black uppercase tracking-[0.08em] text-[#64748b]">
                     Round {Math.min(MAX_CLUE_ROUNDS, currentRoundNumber)} / {MAX_CLUE_ROUNDS}
                   </p>
                   <p className="text-xs font-black uppercase tracking-[0.14em] text-[#99a1ba]">Secret Word</p>
-                  <div className="inline-flex rotate-[-1.5deg] rounded-3xl border-3 border-[#1b2235] bg-white px-6 py-4 shadow-[0_6px_0_rgba(27,34,53,0.2)]">
-                    <p className="text-4xl font-black uppercase text-[#101828] sm:text-5xl">{mySecretWord ?? "WAIT"}</p>
+                  <div className="inline-flex rotate-[-1.5deg] rounded-3xl border-3 border-[#1b2235] bg-white px-4 py-3 shadow-[0_6px_0_rgba(27,34,53,0.2)] sm:px-6 sm:py-4">
+                    <p className="text-3xl font-black uppercase text-[#101828] sm:text-5xl">{mySecretWord ?? "WAIT"}</p>
                   </div>
                   <p
                     className={`inline-flex rounded-full border-3 px-4 py-1 text-xs font-black uppercase tracking-widest ${

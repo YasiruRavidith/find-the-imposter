@@ -195,14 +195,14 @@ export default function DashboardPage() {
           </div>
           <div className="mt-7 flex items-start justify-between gap-4 sm:mt-8">
             <div>
-              <h1 className="text-[2.65rem] font-black leading-[0.98] text-slate-900 sm:text-[3.2rem]">
+              <h1 className="text-[2.1rem] font-black leading-[1] text-slate-900 sm:text-[3.2rem]">
                 Ready to play,
                 <span className="ml-2 text-[#ff4b8b] underline decoration-[#f9c52f] decoration-[3px] underline-offset-[5px]">
                   {profile?.displayName ?? "Detective"}
                 </span>
                 ?
               </h1>
-              <p className="mt-2.5 max-w-120 text-[1.15rem] font-semibold leading-snug text-slate-800">
+              <p className="mt-2.5 max-w-120 text-[0.98rem] font-semibold leading-snug text-slate-800 sm:text-[1.15rem]">
                 Create a new game room or enter a code to join your friends.
               </p>
             </div>
@@ -216,7 +216,7 @@ export default function DashboardPage() {
               type="button"
               onClick={createRoom}
               disabled={busy || !authUser || !profile}
-              className="noir-btn h-19.5 w-full px-7 text-[2rem] leading-none"
+              className="noir-btn h-16 w-full px-6 text-xl leading-none sm:h-19.5 sm:px-7 sm:text-[2rem]"
             >
               {busy ? "Opening..." : "✚ Create Game"}
             </button>
@@ -229,7 +229,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="noir-panel bg-[linear-gradient(120deg,#ffffff_0%,#e6f7ff_100%)] px-5 py-5 sm:px-6 sm:py-6">
-              <p className="text-2xl font-black text-slate-900">🧑‍💼 Join a Room</p>
+              <p className="text-xl font-black text-slate-900 sm:text-2xl">🧑‍💼 Join a Room</p>
               <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                 <input
                   value={joinCodeInput}
