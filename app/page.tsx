@@ -126,7 +126,7 @@ export default function Home() {
 
   return (
     <main className="noir-shell">
-      <section className="noir-frame max-w-4xl p-4 sm:p-8">
+      <section className="mx-auto w-full max-w-4xl p-4 sm:p-8">
         <div className="noir-divider pb-4 sm:pb-5">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="noir-label">The Agency</p>
@@ -137,7 +137,7 @@ export default function Home() {
             Authenticate, assemble your detective profile, and enter live case rooms with players over the internet.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
-            <span className="noir-chip">Classic Noir</span>
+            
             <span className="noir-chip">Realtime Multiplayer</span>
           </div>
         </div>
@@ -145,15 +145,44 @@ export default function Home() {
         {authLoading ? (
           <div className="noir-panel-muted mt-6 p-4 text-sm text-slate-700">Verifying credentials...</div>
         ) : !authUser ? (
-          <div className="mt-6 space-y-4">
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              className="noir-btn w-full px-5 py-3 text-sm sm:text-base"
-            >
-              Authenticate Via Google
-            </button>
-            {error ? <p className="text-sm font-semibold text-red-800">{error}</p> : null}
+          <div className="mt-6 flex min-h-[56vh] items-center justify-center">
+            <div className="noir-panel w-full max-w-xl p-6 sm:p-8">
+              <div className="text-center">
+                <p className="noir-label">Secure Access</p>
+                <h2 className="mt-2 text-3xl font-black text-slate-900 sm:text-4xl">Authenticate To Continue</h2>
+                <p className="mt-2 text-sm font-semibold text-slate-500">
+                  Sign in with your Google account to create your profile and enter rooms.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="noir-btn mt-6 flex w-full items-center justify-center gap-3 px-5 py-3 text-sm sm:text-base"
+              >
+                <svg viewBox="0 0 48 48" aria-hidden="true" className="h-5 w-5 shrink-0">
+                  <path
+                    fill="#EA4335"
+                    d="M24 9.5c3.4 0 6.4 1.2 8.8 3.2l6.6-6.6C35.4 2.4 30.1 0 24 0 14.6 0 6.4 5.4 2.5 13.3l7.7 6c1.9-5.8 7.4-9.8 13.8-9.8z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M2.5 13.3C.9 16.5 0 20.1 0 24s.9 7.5 2.5 10.7l7.7-6C9.7 27.3 9.5 25.7 9.5 24s.2-3.3.7-4.7l-7.7-6z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M24 48c6 0 11.1-2 14.8-5.5l-7.2-5.6c-2 1.4-4.5 2.2-7.6 2.2-6.4 0-11.9-4-13.8-9.8l-7.7 6C6.4 42.6 14.6 48 24 48z"
+                  />
+                  <path
+                    fill="#4285F4"
+                    d="M46.1 20H24v8.3h12.6c-.6 3-2.3 5.5-5 7.2l7.2 5.6C43 37.3 46 31.4 46 24c0-1.4-.1-2.7-.3-4z"
+                  />
+                </svg>
+                Continue with Google
+              </button>
+
+              {error ? <p className="mt-4 text-center text-sm font-semibold text-red-800">{error}</p> : null}
+            </div>
           </div>
         ) : (
           <div className="mx-auto mt-6 w-full max-w-5xl">
