@@ -15,6 +15,11 @@
   --paper-noise: rgba(29, 37, 58, 0.045);
 }
 
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

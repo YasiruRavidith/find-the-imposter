@@ -135,6 +135,23 @@ export default function DashboardPage() {
     }
   }
 
+  async function handleSignOut() {
+    const confirmed = window.confirm("Are you sure you want to sign out?");
+    if (!confirmed) {
+      return;
+    }
+
+    setBusy(true);
+    setError("");
+
+    try {
+      await signOut(auth);
+    } catch {
+      setError("Could not sign out. Please try again.");
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="noir-shell">
       <div className="mx-auto w-full max-w-6xl px-4 py-4 sm:px-6 sm:py-6">
@@ -146,10 +163,11 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center">
                 {profile ? (
-              <div className="hidden items-center gap-2 rounded-full border-3 border-[#1b2235] bg-white px-3 py-1.5 text-xs font-bold text-slate-700 md:flex">
+              <div className="hidden items-center gap-3 rounded-full border-3 border-[#1b2235] bg-white px-4 py-2.5 text-sm font-black text-slate-800 shadow-[0_4px_0_rgba(27,34,53,0.18)] md:flex">
+                <span className="text-base">🏆</span>
                 <span>{resolveCountry(profile.country)}</span>
                 <span>|</span>
-                <span>{profile.score} pts</span>
+                <span>{profile.score} PTS</span>
               </div>
             ) : null}
               <button
@@ -235,14 +253,14 @@ export default function DashboardPage() {
               <button
                 type="button"
                 onClick={() => router.push("/profile")}
-                className="noir-btn-ghost w-full px-4 py-2 text-xs"
+                className="noir-btn-ghost w-full px-4 py-2 text-xs  "
               >
                 Profile Settings
               </button>
               <button
                 type="button"
-                onClick={() => signOut(auth)}
-                className="w-full rounded-full border-3 border-[#1b2235] bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-[0.08em] text-[#d22f67] transition hover:bg-[#fff0f6]"
+                onClick={handleSignOut}
+                className="w-full rounded-full border-3 border-[#1b2235] bg-white px-4 py-2 text-xs font-extrabold uppercase tracking-[0.08em] text-[#d22f67] transition hover:bg-[#fff0f6] "
               >
                 Sign Out
               </button>
