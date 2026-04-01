@@ -168,6 +168,31 @@ export default function RoomGamePage() {
         : 100;
 
   const voteTally = useMemo(() => countVotes(room?.round?.votes), [room?.round?.votes]);
+  const resultData = room?.round?.result ?? null;
+  const hasVoteTie = (() => {
+    if (!resultData || !room?.round?.votes) {
+      return false;
+    }
+
+    const counts = Object.values(countVotes(room.round.votes));
+    if (counts.length === 0) {
+      return false;
+    }
+
+    const maxVotes = Math.max(...counts);
+    return counts.filter((value) => value === maxVotes).length > 1;
+  })();
+  const didCurrentUserWin = (() => {
+    if (!authUser || !resultData || !room?.round) {
+      return null;
+    }
+
+    if (authUser.uid === room.round.imposterUid) {
+      return !resultData.imposterCaught;
+    }
+
+    return resultData.imposterCaught;
+  })();
 
   useEffect(() => {
     if (room?.status !== "playing") {
@@ -366,24 +391,29 @@ export default function RoomGamePage() {
 
       if (voteEntries.length >= playerCount) {
         const tally = countVotes(round.votes);
-        let mostVotedUid: string | null = null;
         let maxVotes = -1;
 
-        for (const [uid, count] of Object.entries(tally)) {
+        for (const count of Object.values(tally)) {
           if (count > maxVotes) {
             maxVotes = count;
-            mostVotedUid = uid;
           }
         }
 
-        const imposterCaught = mostVotedUid === round.imposterUid;
+        const topVotedUids = Object.entries(tally)
+          .filter(([, count]) => count === maxVotes)
+          .map(([uid]) => uid);
+        const hasTie = topVotedUids.length > 1;
+        const mostVotedUid = hasTie ? null : (topVotedUids[0] ?? null);
+
+        // Tie vote means the imposter survives this round.
+        const imposterCaught = !hasTie && mostVotedUid === round.imposterUid;
         const scoreDelta: Record<string, number> = {};
 
         for (const uid of Object.keys(currentRoom.players ?? {})) {
           if (imposterCaught) {
-            scoreDelta[uid] = uid === round.imposterUid ? -1 : 1;
+            scoreDelta[uid] = uid === round.imposterUid ? 0 : 1;
           } else {
-            scoreDelta[uid] = uid === round.imposterUid ? 2 : 0;
+            scoreDelta[uid] = uid === round.imposterUid ? 1 : 0;
           }
         }
 
@@ -667,11 +697,28 @@ export default function RoomGamePage() {
               className="mx-auto w-full max-w-3xl rounded-3xl border-3 border-[#1b2235] bg-[#f7f7f5] p-4 sm:p-5"
             >
               <p className="text-4xl font-black uppercase text-[#1b2235] sm:text-5xl">
-                {room.round?.result?.imposterCaught ? "Imposter Caught" : "Imposter Escaped"}
+                {resultData?.imposterCaught ? "Innocents Win" : "Imposter Wins"}
               </p>
               <p className="mt-1 text-sm text-slate-700">
-                Target: <span className="font-bold">{playersByUid.get(room.round?.imposterUid ?? "")?.displayName ?? "Unknown"}</span>
+                Imposter: <span className="font-bold">{playersByUid.get(room.round?.imposterUid ?? "")?.displayName ?? "Unknown"}</span>
               </p>
+
+              <div
+                className={`mt-4 rounded-2xl border-3 px-4 py-4 shadow-[0_6px_0_rgba(27,34,53,0.16)] ${
+                  didCurrentUserWin
+                    ? "border-[#169ed1] bg-[#dff5ff] text-[#0d5f82]"
+                    : "border-[#a31f4b] bg-[#ffe1ee] text-[#7c1438]"
+                }`}
+              >
+                <p className="text-lg font-black uppercase">{didCurrentUserWin ? "You Win" : "You Lose"}</p>
+                <p className="mt-1 text-sm font-semibold">
+                  {hasVoteTie
+                    ? "Top votes tied. Tie means imposter survives."
+                    : resultData?.imposterCaught
+                      ? "The team found the imposter."
+                      : "The team voted wrong. Imposter escaped."}
+                </p>
+              </div>
 
               <div className="mt-4 rounded-2xl border-2 border-[#1b2235]/30 bg-white p-4 text-sm">
                 <p className="font-bold uppercase text-slate-900">Vote Tally</p>
@@ -680,6 +727,18 @@ export default function RoomGamePage() {
                     {player.displayName}: {voteTally[player.uid] ?? 0}
                   </p>
                 ))}
+              </div>
+
+              <div className="mt-4 rounded-2xl border-2 border-[#1b2235]/30 bg-white p-4 text-sm">
+                <p className="font-bold uppercase text-slate-900">Round Points</p>
+                {players.map((player) => (
+                  <p key={`score-${player.uid}`} className="text-slate-700">
+                    {player.displayName}: +{resultData?.scoreDelta?.[player.uid] ?? 0}
+                  </p>
+                ))}
+                <p className="mt-2 text-xs font-semibold text-slate-500">
+                  Rule: If vote ties, imposter wins (+1). If imposter is caught, every innocent gets +1 and imposter gets +0.
+                </p>
               </div>
 
               {isHost ? (
