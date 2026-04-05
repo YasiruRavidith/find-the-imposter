@@ -1,5 +1,9 @@
 # Find the Imposter
 
+<p align="center"><img width="1325" height="945" alt="image" src="https://github.com/user-attachments/assets/ce0065ce-34b7-4187-9e48-e87de9287e71" /></p>
+<p align="center"><img width="1321" height="944" alt="Screenshot 2026-04-05 161528" src="https://github.com/user-attachments/assets/a34af196-9cfe-48bc-947b-9ef0076c95aa" /></p>
+<p align="center"><img width="1323" height="944" alt="Screenshot 2026-04-05 161556" src="https://github.com/user-attachments/assets/225657f1-818c-4012-a632-4bb68c0079a2" /></p>
+
 Real-time multiplayer social deduction game built with Next.js App Router and Firebase Realtime Database.
 
 ## Features
